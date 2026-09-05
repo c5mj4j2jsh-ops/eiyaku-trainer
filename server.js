@@ -21,7 +21,8 @@ app.use(express.urlencoded({extended:true}));
 app.use(rateLimit({windowMs:60*1000,max:120,standardHeaders:true,legacyHeaders:false}));
 app.set('trust proxy',1);
 app.use(session({secret:process.env.SESSION_SECRET||'change-me',resave:false,saveUninitialized:false,store:new pgSession({pool,tableName:'user_sessions',createTableIfMissing:true}),cookie:{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',maxAge:12*60*60*1000}}));
-app.get('/teacher', (req,res)=>res.sendFile('/app/teacher.html'));\napp.use(express.static('/app'));
+app.get('/teacher', (req,res)=>res.sendFile('/app/teacher.html'));
+app.use(express.static('/app'));
 
 async function q(text,params=[]){const r=await pool.query(text,params);return r.rows}
 async function one(text,params=[]){const r=await pool.query(text,params);return r.rows[0]}
@@ -67,4 +68,4 @@ app.post('/api/teacher/import',teacher,upload.single('file'),async(req,res)=>{tr
 app.get('/api/teacher/attempts',teacher,async(req,res)=>{const rows=await q(`SELECT a.created_at,u.id AS student_id,u.name,q.id AS question_id,a.score,a.status,a.student_answer,a.feedback,a.hint FROM attempts a JOIN users u ON u.id=a.user_id JOIN questions q ON q.id=a.question_id ORDER BY a.created_at DESC LIMIT 300`);res.json(rows)});
 app.get('/api/teacher/question-mastery',teacher,async(req,res)=>{const rows=await q(`SELECT q.id,q.english,u.id AS student_id,u.name,p.attempts,p.correct,p.streak,p.last_score,p.last_status,p.last_seen FROM questions q CROSS JOIN users u LEFT JOIN progress p ON p.question_id=q.id AND p.user_id=u.id WHERE u.role='student' ORDER BY u.id,q.id`);res.json(rows)});
 
-init().then(()=>app.listen(PORT,()=>console.log(`Listening on ${PORT}`))).catch(e=>{console.error(e);process.exit(1)});
+init().then(()=>app.listen(PORT,'0.0.0.0',()=>console.log(`Listening on ${PORT}`))).catch(e=>{console.error(e);process.exit(1)});
