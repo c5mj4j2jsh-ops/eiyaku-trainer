@@ -37,8 +37,26 @@ async function init(){
  await q(`CREATE TABLE IF NOT EXISTS questions(id TEXT PRIMARY KEY,english TEXT NOT NULL,model TEXT NOT NULL,points NUMERIC DEFAULT 10,key1 TEXT,key2 TEXT,key3 TEXT,difficulty TEXT,category TEXT,updated_at TIMESTAMPTZ DEFAULT now());`);
  await q(`CREATE TABLE IF NOT EXISTS progress(user_id TEXT REFERENCES users(id) ON DELETE CASCADE,question_id TEXT REFERENCES questions(id) ON DELETE CASCADE,attempts INT NOT NULL DEFAULT 0,correct INT NOT NULL DEFAULT 0,streak INT NOT NULL DEFAULT 0,last_score NUMERIC,last_status TEXT,last_answer TEXT,last_feedback TEXT,last_seen TIMESTAMPTZ,PRIMARY KEY(user_id,question_id));`);
  await q(`CREATE TABLE IF NOT EXISTS attempts(id BIGSERIAL PRIMARY KEY,user_id TEXT REFERENCES users(id) ON DELETE CASCADE,question_id TEXT REFERENCES questions(id) ON DELETE CASCADE,student_answer TEXT,score NUMERIC,status TEXT,feedback TEXT,hint TEXT,created_at TIMESTAMPTZ DEFAULT now());`);
- const t=await one(`SELECT id FROM users WHERE role='teacher' LIMIT 1`);
- if(!t){const pw=process.env.INIT_TEACHER_PASSWORD||'change-this-password';await q(`INSERT INTO users(id,name,role,password_hash) VALUES($1,$2,'teacher',$3)`,['teacher','先生',bcrypt.hashSync(pw,12)]);}
+ const pw=process.env.INIT_TEACHER_PASSWORD||'change-this-password';
+const hash=bcrypt.hashSync(pw,12);
+await q(`
+
+  INSERT INTO users(id,name,role,password_hash)
+
+  VALUES($1,$2,'teacher',$3)
+
+  ON CONFLICT (id)
+
+  DO UPDATE SET
+
+    name=EXCLUDED.name,
+
+    role='teacher',
+
+    password_hash=EXCLUDED.password_hash
+
+`,['teacher','先生',hash]);
+
 }
 
 app.get('/api/health',async(req,res)=>{try{await q('SELECT 1');res.json({ok:true})}catch(e){res.status(503).json({ok:false})}});
