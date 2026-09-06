@@ -12,6 +12,7 @@ const pgSession=require('connect-pg-simple')(session);
 const app=express();
 const PORT=process.env.PORT||3000;
 const pool=new Pool({connectionString:process.env.DATABASE_URL});
+console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'MISSING');
 const upload=multer({dest:'/tmp/eiyaku-uploads',limits:{fileSize:5*1024*1024}});
 const openai=process.env.OPENAI_API_KEY?new OpenAI({apiKey:process.env.OPENAI_API_KEY}):null;
 
